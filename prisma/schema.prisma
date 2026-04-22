@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}
+
+enum AccountType {
+  CUSTOMER
+  OWNER
+  ADMIN
+}
+
+enum VenueApprovalStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String?     @unique
+  phone         String?     @unique
+  passwordHash  String
+  accountType   AccountType
+  status        UserStatus  @default(PENDING_VERIFICATION)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  profile       UserProfile?
+  ownerProfile  OwnerProfile?
+}
+
+model UserProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  firstName  String
+  lastName   String
+  fullName   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OwnerProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  businessName       String
+  contactEmail       String?
+  contactPhone       String?
+  commercialRegNumber String?
+  taxNumber          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venues             Venue[]
+}
+
+model City {
+  id         String   @id @default(cuid())
+  nameAr     String
+  slug       String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  areas      Area[]
+  venues     Venue[]
+}
+
+model Area {
+  id         String   @id @default(cuid())
+  cityId     String
+  nameAr     String
+  slug       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  city       City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  venues     Venue[]
+  @@unique([cityId, slug])
+}
+
+model Venue {
+  id                 String              @id @default(cuid())
+  ownerProfileId     String
+  cityId             String
+  areaId             String
+  nameAr             String
+  slug               String              @unique
+  addressLine        String
+  latitude           Decimal?            @db.Decimal(10, 7)
+  longitude          Decimal?            @db.Decimal(10, 7)
+  googleMapsUrl      String?
+  approvalStatus     VenueApprovalStatus @default(PENDING_REVIEW)
+  defaultHourlyPrice Decimal             @db.Decimal(10, 2)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  ownerProfile       OwnerProfile        @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  city               City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  area               Area                @relation(fields: [areaId], references: [id], onDelete: Restrict)
+}
