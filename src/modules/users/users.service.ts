@@ -21,22 +21,34 @@ export class UsersService {
           create: {
             firstName: dto.firstName,
             lastName: dto.lastName,
-            fullName
-          }
-        }
+            fullName,
+          },
+        },
       },
-      include: { profile: true }
+      include: {
+        profile: true,
+      },
     });
   }
 
   findByEmailOrPhone(value: string) {
-    return this.prisma.user.findFirst({ where: { OR: [{ email: value }, { phone: value }] } });
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: value }, { phone: value }],
+      },
+      include: {
+        profile: true,
+      },
+    });
   }
 
   findPublicProfileById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
-      include: { profile: true, ownerProfile: true }
+      include: {
+        profile: true,
+        ownerProfile: true,
+      },
     });
   }
 }
