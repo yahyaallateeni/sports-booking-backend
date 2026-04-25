@@ -4,8 +4,8 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -13,10 +13,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   async register(dto: RegisterUserDto) {
     if (!dto.email && !dto.phone) {
@@ -76,34 +73,33 @@ export class AuthService {
 
     const accessSecret =
       process.env.JWT_ACCESS_SECRET || 'fallback-access-secret-2026';
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-2026';
     const accessExpiresIn =
       process.env.JWT_ACCESS_EXPIRES_IN || '15m';
+    const refreshExpiresIn =
+      process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
-    const accessToken = await this.jwtService.signAsync(
+    const accessToken = jwt.sign(
       {
         sub: user.id,
         accountType: user.accountType,
       },
+      accessSecret,
       {
-        secret: accessSecret,
-        expiresIn: accessExpiresIn,
+        expiresIn: accessExpiresIn as jwt.SignOptions['expiresIn'],
       },
     );
 
-    const refreshSecret =
-      process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-2026';
-    const refreshExpiresIn =
-      process.env.JWT_REFRESH_EXPIRES_IN || '30d';
-
-    const refreshToken = await this.jwtService.signAsync(
+    const refreshToken = jwt.sign(
       {
         sub: user.id,
         accountType: user.accountType,
         type: 'refresh',
       },
+      refreshSecret,
       {
-        secret: refreshSecret,
-        expiresIn: refreshExpiresIn,
+        expiresIn: refreshExpiresIn as jwt.SignOptions['expiresIn'],
       },
     );
 
