@@ -2,86 +2,62 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-async function upsertCityWithAreas(city) {
-  const createdCity = await prisma.city.upsert({
-    where: { slug: city.slug },
-    update: { nameAr: city.nameAr },
+async function ensureOtherCity() {
+  return prisma.city.upsert({
+    where: { slug: 'other' },
+    update: { nameAr: 'أخرى' },
     create: {
-      nameAr: city.nameAr,
-      slug: city.slug,
+      nameAr: 'أخرى',
+      slug: 'other',
     },
   });
+}
 
-  for (const area of city.areas) {
-    await prisma.area.upsert({
-      where: {
-        cityId_slug: {
-          cityId: createdCity.id,
-          slug: area.slug,
-        },
+async function ensureOtherAreaForCity(cityId) {
+  return prisma.area.upsert({
+    where: {
+      cityId_slug: {
+        cityId,
+        slug: 'other',
       },
-      update: {
-        nameAr: area.nameAr,
-      },
-      create: {
-        cityId: createdCity.id,
-        nameAr: area.nameAr,
-        slug: area.slug,
-      },
-    });
-  }
-
-  return createdCity;
+    },
+    update: { nameAr: 'أخرى' },
+    create: {
+      cityId,
+      nameAr: 'أخرى',
+      slug: 'other',
+    },
+  });
 }
 
 async function main() {
-  const cities = [
-    {
-      nameAr: 'الرياض',
-      slug: 'riyadh',
-      areas: [
-        { nameAr: 'الملز', slug: 'al-malaz' },
-        { nameAr: 'النرجس', slug: 'al-narjis' },
-        { nameAr: 'الياسمين', slug: 'al-yasmin' },
-        { nameAr: 'العارض', slug: 'al-arid' },
-      ],
-    },
-    {
-      nameAr: 'جدة',
-      slug: 'jeddah',
-      areas: [
-        { nameAr: 'الصفا', slug: 'al-safa' },
-        { nameAr: 'الروضة', slug: 'al-rawdah' },
-        { nameAr: 'أبحر', slug: 'obhur' },
-        { nameAr: 'الحمراء', slug: 'al-hamra' },
-      ],
-    },
-    {
-      nameAr: 'الدمام',
-      slug: 'dammam',
-      areas: [
-        { nameAr: 'الشاطئ', slug: 'al-shatea' },
-        { nameAr: 'النور', slug: 'al-noor' },
-        { nameAr: 'الفيصلية', slug: 'al-faisaliyah' },
-        { nameAr: 'الندى', slug: 'al-nada' },
-      ],
-    },
-  ];
+  const cities = await prisma.city.findMany({
+    select: { id: true, nameAr: true, slug: true },
+  });
+
+  const otherCity = await ensureOtherCity();
+
+  let processed = 0;
 
   for (const city of cities) {
-    await upsertCityWithAreas(city);
+    await ensureOtherAreaForCity(city.id);
+    processed += 1;
   }
 
-  const cityCount = await prisma.city.count();
-  const areaCount = await prisma.area.count();
+  await ensureOtherAreaForCity(otherCity.id);
 
-  console.log(`Cities seeded: ${cityCount}`);
-  console.log(`Areas seeded: ${areaCount}`);
+  const otherAreasCount = await prisma.area.count({
+    where: { slug: 'other' },
+  });
+
+  console.log(`Processed cities: ${processed}`);
+  console.log(`Other city id: ${otherCity.id}`);
+  console.log(`Other areas count: ${otherAreasCount}`);
 }
 
 main()
   .catch((error) => {
-    console.error('Seed failed:', error);
+    console.error('Seed other location failed:', error);
     process.exit(1);
   })
   .finally(async () => {
