@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVenueDto } from './dto/create-venue.dto';
 
@@ -29,10 +29,35 @@ export class VenuesService {
         nameAr: dto.nameAr,
         slug: dto.slug,
         addressLine: dto.addressLine,
-        latitude: dto.latitude ? Number(dto.latitude) : undefined,
-        longitude: dto.longitude ? Number(dto.longitude) : undefined,
-        googleMapsUrl: dto.googleMapsUrl,
+        latitude: dto.latitude ? Number(dto.latitude) : null,
+        longitude: dto.longitude ? Number(dto.longitude) : null,
+        googleMapsUrl: dto.googleMapsUrl || null,
         defaultHourlyPrice: Number(dto.defaultHourlyPrice)
+      },
+      include: {
+        city: true,
+        area: true,
+        ownerProfile: true
+      }
+    });
+  }
+
+  async updateApprovalStatus(id: string, approvalStatus: 'APPROVED' | 'REJECTED') {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id }
+    });
+
+    if (!venue) {
+      throw new NotFoundException('الملعب غير موجود');
+    }
+
+    return this.prisma.venue.update({
+      where: { id },
+      data: { approvalStatus },
+      include: {
+        city: true,
+        area: true,
+        ownerProfile: true
       }
     });
   }
