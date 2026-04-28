@@ -26,15 +26,21 @@ enum VenueApprovalStatus {
   REJECTED
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 model User {
-  id            String      @id @default(cuid())
-  email         String?     @unique
-  phone         String?     @unique
+  id            String        @id @default(cuid())
+  email         String?       @unique
+  phone         String?       @unique
   passwordHash  String
   accountType   AccountType
-  status        UserStatus  @default(PENDING_VERIFICATION)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  status        UserStatus    @default(PENDING_VERIFICATION)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   profile       UserProfile?
   ownerProfile  OwnerProfile?
 }
@@ -51,17 +57,17 @@ model UserProfile {
 }
 
 model OwnerProfile {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  businessName       String
-  contactEmail       String?
-  contactPhone       String?
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  businessName        String
+  contactEmail        String?
+  contactPhone        String?
   commercialRegNumber String?
-  taxNumber          String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venues             Venue[]
+  taxNumber           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venues              Venue[]
 }
 
 model City {
@@ -83,6 +89,7 @@ model Area {
   updatedAt  DateTime @updatedAt
   city       City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
   venues     Venue[]
+
   @@unique([cityId, slug])
 }
 
@@ -101,7 +108,26 @@ model Venue {
   defaultHourlyPrice Decimal             @db.Decimal(10, 2)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+
   ownerProfile       OwnerProfile        @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
   city               City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
   area               Area                @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  bookings           Booking[]
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  venueId       String
+  customerName  String
+  customerPhone String
+  bookingDate   DateTime
+  startTime     String
+  durationHours Int
+  notes         String?
+  totalPrice    Decimal       @db.Decimal(10, 2)
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  venue         Venue         @relation(fields: [venueId], references: [id], onDelete: Restrict)
 }
