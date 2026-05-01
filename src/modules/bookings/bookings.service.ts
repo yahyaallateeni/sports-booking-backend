@@ -109,6 +109,38 @@ export class BookingsService {
 
 
 
+  async findForOwner(userId: string) {
+
+    return this.prisma.booking.findMany({
+
+      where: {
+
+        venue: {
+
+          ownerProfile: {
+
+            userId,
+
+          },
+
+        },
+
+      },
+
+      orderBy: { createdAt: 'desc' },
+
+      include: {
+
+        venue: true,
+
+      },
+
+    });
+
+  }
+
+
+
   async updateStatus(id: string, status: 'PENDING' | 'CONFIRMED' | 'CANCELLED') {
 
     const booking = await this.prisma.booking.findUnique({
