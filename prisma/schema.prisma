@@ -62,6 +62,8 @@ model User {
   profile UserProfile?
 
   ownerProfile OwnerProfile?
+
+  customerBookings Booking[]
 }
 
 model UserProfile {
@@ -185,6 +187,8 @@ model Booking {
 
   venueId String
 
+  customerUserId String?
+
   customerName String
 
   customerPhone String
@@ -206,4 +210,6 @@ model Booking {
   updatedAt DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Restrict)
+
+  customerUser User? @relation(fields: [customerUserId], references: [id], onDelete: SetNull)
 }
